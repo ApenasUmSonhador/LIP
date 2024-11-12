@@ -172,3 +172,186 @@ thread P in
     {Browse P}
 end
 {Browse 99*99} /* Primeiro será printado 99*99 que é muito mais rapido que calcular pascal de 30, sendo as operações feitas simultaneamente */
+
+/* (1.11)
+    O livro nos introduz a um novo conceito, dataflow, que é uma forma de programação concorrente que permite a execução de tarefas simultaneamente porém ligadas por um fluxo de dados.
+    A ideia de delay é introduzida, que é uma forma de atrasar a execução de um bloco de código.
+*/
+declare X in
+    thread {Delay 10000} X=99 end
+    {Browse start} {Browse X*X}
+
+declare X in
+    thread {Browse start} {Browse X*X} end
+    {Delay 10000} X=99
+
+/* Ele aguarda a variavel estar pronta para apresentar o resultado de X*X -> 99*99 
+    Mas não dissecarei mais, terei mais calma para quando estivermos no capítulo 4
+*/
+
+/* (1.12) 
+    Conceito bem básico...
+    Não vi nada de mais nessa sessão, mas é importante para conhecer a sintaxe de celulas
+*/
+declare
+C={NewCell 0}
+    C:=@C+1 
+{Browse @C}
+/* A unica coisa interessante é que agora percebo que é impossivel "mexer na variavel" como 
+    em algumas linguagens com o famoso C = C + 1... Ok*/
+declare
+C={NewCell 0}
+fun {FastPascal N}
+    C:=@C+1
+    {GenericPascal Add N}
+end
+/* Achei interessante pois isso me deu uma epifania sobre armazernar esses conteúdos em uma lista,
+    para que eu possa acessar depois sem ter que refazer calculos, exemplo, caso eu ja tenha
+    feito o N = 10, vou buscar armazenar do 1 ao 10 num array e depois quando for fazer N superiores
+    eu não começo o algoritmo do 1, mas do último feito (10) e continuo, melhorando a velocidade. */
+
+/*(1.13)
+    OBJETOS! ENFIM!
+    Estava ansioso para ver como o Oz trabalha com esse paradigma e... Não me surpreendeu nem um pouco kk
+    realmente faz todo o sentido a maneira com que ele trabalha, sendo até possível de ser previsto!
+    Gostei bastante!
+*/
+
+declare
+local C in
+    C={NewCell 0}
+    fun {Bump}
+        C:=@C+1
+        @C
+    end
+    fun {Read}
+        @C
+    end
+end
+{Browse {Bump}}
+{Browse {Bump}}
+
+/* Olha que lindo! Decidi brincar um pouco e fazer uma Estrutura de dados simples: */
+
+declare
+local Stack in
+    Stack = {NewCell 0}
+    fun 
+    {Push X}
+        Stack := X|@Stack
+    end
+    fun {Pop}
+        case @Stack of H|T then
+            Stack := T
+            H
+        else
+            raise stack_is_empty end /* Aqui tive que caçar como lançar excessões, 
+                                        mas muito simples também */
+        end
+    end
+    fun {Top}
+        case @Stack of H|T then
+            H
+        else
+            raise stack_is_empty end
+        end
+    end
+    fun {IsEmpty}
+        @Stack == nil
+    end
+end
+
+/* Sinto que brincarei mais em oz para implementar EDs (uma vez que estou fazendo
+    essa disciplina este semestre) */
+/* Os algoritmos dessa sessão continuam muito redundantes e chatos, mas mesmo assim necessários */
+declare
+    fun {FastPascal N}
+    {Browse {Bump}}
+    {GenericPascal Add N}
+end
+
+/*(1.14)
+    CLASSES!
+*/
+declare
+fun {NewCounter}
+    C Bump Read in
+        C={NewCell 0}
+        fun {Bump}
+            C:=@C+1
+            @C
+        end
+        fun {Read}
+            @C
+    end
+    counter(bump:Bump read:Read)
+end
+
+declare
+Ctr1={NewCounter}
+Ctr2={NewCounter}
+{Browse {Ctr1.bump}}
+
+/* Função que retorna funções... Pensei dessa maneira sobre o que li, achei interessante a abordagem
+    embora não minta sentir saudades das simplicidades que o Java e afins me oferecem, sobre classes.
+    Mas não vou julgar tão cedo, no capítulo 7 abordaremos melhor sobre */
+
+/*(1.15)
+    Bacana, estava refletindo sobre isso após a sessão (1.11) pois como eu iria garantir que
+    tal thread terminará antes ou depois de uma outra? */
+declare
+C={NewCell 0}
+thread
+    C:=1
+end
+thread
+    C:=2
+end
+/* Esse código é péssimo para o caso em que estou pensando pois, como garanto qual será o resultado 
+    final?
+    Para isso vem o Dataflow inclusive*/
+declare
+C={NewCell 0}
+thread I in
+    I=@C
+    C:=I+1
+end
+thread J in
+    J=@C
+    C:=J+1
+end
+/* A pergunta feita, inclusive é repetida nos exercícios e já foi respondida por lá:
+    o motivo é que por puro destino (sorte ou azar) ambas J e I puxaram o valor de C quando este era igual a 0, portanto 0+1 = 1 em ambos os casos atribuindo 1
+*/
+/* Portanto, essa sessão foi muito bacana por me dar um alerta de sobre o quanto devo me precaver
+    com o caso de concorrências... Terei cuidado! */
+
+/* (1.16) */
+declare
+C={NewCell 0}
+L={NewLock}
+thread
+    lock L then I in
+        I=@C
+        C:=I+1
+    end
+end
+thread
+    lock L then J in
+        J=@C
+        C:=J+1
+    end
+end
+/* Essa, enfim é uma das soluções para o problema anterior.
+    Resposta para a pergunta:
+    Se você não usar o mesmo bloqueio para ambos os threads, a intercalação entre suas operações em C
+    poderá fazer com que ambos os threads leiam o mesmo valor e o incrementem de maneira não 
+    coordenada, resultando em um resultado incorreto. Portanto, proteger ambos os corpos de thread com
+    o mesmo bloqueio é crucial para evitar tal intercalação e garantir a sincronização correta. 
+*/
+/* Nessa sessão basicamente fiquei quieto e absorvi conhecimento... apenas... wow... */
+
+/*(1.17) 
+    Enfim chegamos ao fim, esse é um apanhado de o que ainda poderá ser visto no futuro... Nada
+    de interessante que eu possa acrescentar.
+*/
